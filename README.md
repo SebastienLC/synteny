@@ -12,9 +12,9 @@ Showing the location of the genes in other species.
 **5. Project description:**
 What you need to do is below;
 
-1. Put all chromosomes for each species (human, marmoset, mouse) into a single column in the plot like in attached figure. Make sure the heights of each chromosomes in the bars are correlated with the actual chromosome sizes.
+1. Put all chromosomes for each species (human, marmoset, mouse) into a single column in the plot like in the figure. Make sure the heights of each chromosomes in the bars are correlated with the actual chromosome sizes.
 
-2. Draw lines by matching the gene names in the bed files. You will calculate the relative positions using the the location of the gene. You can use the center of the gene by having the average of second and third columns in the bed file.
+2. Draw lines by matching the gene names in the bed files. You will calculate the relative positions using the location of the gene. You can use the center of the gene by having the average of the second and third columns in the bed file.
 
 3. One gene can be in multiple locations in the other species. For those cases just put multiple lines.
 
