@@ -1,0 +1,27 @@
+    <html>
+    <head>
+    <script src="synteny.js">    </script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+
+    <script type="text/javascript">
+      input_object_list = [];
+
+      function displayInputTable() {
+          document.getElementById("input_table").innerHTML = getInputTableHTML(input_object_list);  
+      }
+      document.addEventListener('DOMContentLoaded', displayInputTable);
+
+    </script>
+    <title>Synteny</title>
+    </head>
+    <body>
+      <h1>Synteny</h1>
+
+    <div id='bar_genomics_graph_div'></div>
+
+    <div id='input_table'>input_table</div>
+
+    <div id='output'></div>
+
+    </body>
+    </html>
