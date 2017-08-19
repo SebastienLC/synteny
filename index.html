@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Synteny Plot</title>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.1.1.js"></script>
+    <link rel="stylesheet" href="main.css">
+
+</head>
+
+<body>
+<select id="parameters">
+  <option value="05_exon09_single">Min. Ratio: 0.5, Min ratio of Exons: 0.9, Allow Multiple Regions: No</option>
+  <option value="09_exon1_multiple">Min. Ratio: 0.9, Min ratio of Exons: 1, Allow Multiple Regions: Yes</option> 
+</select>
+    <div id="figure" style="margin-bottom: 50px;"></div>
+
+    <script type="text/javascript">
+       
+        
+      var doPlot = function(){
+            d3.select("#figure").select("svg").remove()
+            var arrorg = ["human", "marmoset", "mouse"]; //organism for comparison
+            var stackdata = [];
+           
+            //load bed files (eg. human.bed)
+            arrorg.forEach(function(org) {
+                var file =  org
+                if (org != "human") {
+                    var sel = document.getElementById('parameters');
+                    file =  org + "_" + sel.options[sel.selectedIndex].value
+                }
+                  
+                $.ajax({
+                    type: "GET",
+                    url: "data/" + file + ".bed",
+                    async: false,
+                    data: "text",
+                    success: function(d) {
+                        window[org + "bed"] = loadobj(d);
+
+                    },
+                    error: function(err) {
+                        alert('error');
+                    }
+
+                });
+                //function for parsing bed file
+                function loadobj(data) {
+                    datalines = data.split(/\r\n|\n/);
+                    var lines = [];
+                    for (var i = 0; i < datalines.length; i++) {
+                        var linearray = datalines[i].split("\t");
+                        lines.push({
+                            chr: linearray[0],
+                            start: linearray[1],
+                            stop: linearray[2],
+                            gname: linearray[3]
+                        });
+                    };
+                    return lines
+                }
+
+                //*************************************************************************************//
+                //load chromosome size (eg. human.chrom.sizes)
+                $.ajax({
+                    type: "GET",
+                    url: "data/" + org + ".chrom.sizes",
+                    async: false,
+                    data: "text",
+                    success: function(d) {
+                        window[org + "chrsize"] = loadchrsize(d);
+
+                    },
+                    error: function(err) {
+                        alert('error');
+                    }
+
+                });
+                //function for parsing chr size file
+                function loadchrsize(data) {
+                    datalines = data.split(/\r\n|\n/);
+                    var lines = [];
+                    for (var i = 0; i < datalines.length; i++) {
+                        var linearray = datalines[i].split("\t");
+                        lines.push({
+                            chr: linearray[0],
+                            size: linearray[1]
+                        });
+                    };
+                    return lines
+                }
+
+                //sum of chromosome sizes for each organism assigned to new variable (eg. humantotchrsize)
+                window[org + "totchrsize"] = 0;
+                window[org + "chrsize"].forEach(function(i) {
+                    if (i.size) {
+                        window[org + "totchrsize"] += i.size / 1;
+                    }
+                });
+
+                //Calculation of start(y0) and end point(y1) of stacked bars by using (eg humanchrsize) file 
+                function convstack(array) {
+                    arrofobj = [];
+                    var num = 0;
+                    array.forEach(function(i) {
+                        if (i.chr && i.chr !== "chrM") {
+                            arrofobj.push({
+                                name: i.chr,
+                                y1: num / 1 + i.size / 1,
+                                y0: num / 1
+                            });
+                            num += i.size / 1;
+                        }
+                    });
+                    return arrofobj
+                }
+
+                //Calculation of middle point of each gene(y) by using (eg humanbed) file
+                function convlines(array) {
+                    arroflines = [];
+                    var num = 0;
+                    array.forEach(function(i) {
+                        if (i.chr) {
+                            arroflines.push({
+                                name: i.chr,
+                                y: (i.start / 1 + i.stop / 1) / 2, //midde point of the gene
+                                gname: i.gname
+                            });
+                        }
+                    });
+                    return arroflines
+                }
+
+                //all converted data added to stackdata
+                stackdata.push({
+                    xIndex: org, //selected organism
+                    total: window[org + "totchrsize"], //total chromosome size
+                    bars: convstack(window[org + "chrsize"]), //bar data
+                    LineCategory: convlines(window[org + "bed"]) //line data
+                });
+            });
+
+
+            var data = stackdata;
+
+            //format of data
+            //var data = [
+            //  { xIndex: "human", total: 300, bars: [ {name: "chr1", y0: 0, y1: 100}, {name: "chr2", y0: 100, y1: 150}, {name: "chr3", y0: 150, y1: 170},  {name: "chr4", y0: 170, y1: 300}], LineCategory: [ {name: "chr1", gname: "str12", y: 10}, {name: "chr2", gname: "str24", y: 0}, {name: "chr4", gname: "str44", y: 2} , {name: "chr4", gname: "str24", y: 20} ]},
+            //  { xIndex: "mouse", total: 300, bars: [ {name: "chr1", y0: 0, y1: 50}, {name: "chr2", y0: 50, y1: 120}, {name: "chr3", y0: 120, y1: 300} ],                                     LineCategory: [ {name: "chr1", gname: "str12", y: 20}, {name: "chr1", gname: "str24", y: 10}, {name: "chr2", gname: "str44", y: 10}, {name: "chr3", gname: "str24", y: 40}  ]},
+            //  { xIndex: "mon", total: 300, bars: [ {name: "chr1", y0: 0, y1: 50}, {name: "chr2", y0: 50, y1: 120}, {name: "chr3", y0: 120, y1: 300} ],                                       LineCategory: [ {name: "chr1", gname: "str12", y: 30}, {name: "chr2", gname: "str24", y: 90}, {name: "chr3", gname: "str44", y: 60} ]}
+            //]
+
+            // d3 plot: 
+            var margin = {
+                top: 50,
+                right: 20,
+                bottom: 30,
+                left: 20
+            };
+
+            var barPad = .95; //padding between bars
+            var width = 800 - margin.left - margin.right;
+            var height = 500 - margin.top - margin.bottom;
+
+            var svg = d3.select("#figure").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .attr("id", "d3-plot")
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            /// Adding Name in LineCategory
+            data.forEach(function(d) {
+                d.LineCategory.forEach(function(b) {
+                    b.xIndex = d.xIndex;
+                })
+            });
+
+            //Assigning actual location of the genes on the plot:
+            // Adding starting point of a horizontal bar to the y values of LineCategory for each chromosome
+            data.forEach(function(d) {
+                d.LineCategory.forEach(function(b) {
+                    var index = 0;
+                    d.bars.forEach(function(e) {
+                        if (b.name === e.name) {
+                            //e.y0 ->chr start point on stacked bar
+                            //b.y - >position within the chromosome
+                            b.y = e.y0 + b.y // actual position on graph
+                            return
+                        }
+                    });
+                })
+            });
+
+
+
+
+
+            // Assigning min and max values of x and y axis
+            var x = d3.scale.ordinal()
+                .rangeRoundBands([0, width], barPad)
+                .domain(data.map(function(d) {
+                    return d.xIndex;
+                }));
+
+            var y = d3.scale.linear()
+                .rangeRound([height, 0])
+                .domain([0, d3.max(data, function(d) {
+                    return d.total;
+                })]);
+            // Add a X Axis 
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .orient("bottom");
+
+            //Assigning position of the line based on x axis and y values
+            //rangeBand used to find the width of the each bar. Center of the bar is found by dividing 2.
+            var line = d3.svg.line().x(function(d) {
+                return x(d.xIndex) + x.rangeBand() / 2;
+            }).y(function(d) {
+                return y(d.y)
+            });
+
+            //color scale assigned 
+            var color = d3.scale.category20()
+
+
+            var Categories = [];
+            // To Draw lines, first add (type: "line") into each element of linecategories
+            data.forEach(function(d) {
+                d.LineCategory.forEach(function(b) {
+                    if (Categories.findIndex(function(c) {
+                            return c.gname === b.gname
+                        }) == -1) {
+                        b.Type = "line";
+                        Categories.push(b)
+                    }
+                })
+            });
+
+
+
+            //Matching genes that are common for first and second organism, then second and third organism
+            //This phase is performed by two nested for loops. 
+            //Alternatively sorting each array and matching would speed up the process.
+            //Other alternative is using hash functions. Since overall data is small, nested two loops is chosen.
+            function Linecreator(array) {
+                var linebox = [];
+                for (k = 0; k < array.length - 1; k++) {
+                    array[k].forEach(function(item) {
+                        array2 = array[k + 1].filter(function(elem) {
+                            return elem.gname === item.gname
+                        });
+                        array2.forEach(function(d) {
+                            linebox.push([item, d]);
+                        });
+                    });
+                };
+                return linebox;
+            }
+
+            // Processing Line data
+            lineData = Linecreator(data.map(function(d) {
+                return d.LineCategory
+            }));
+
+            // Line Coloring
+            LineColor = d3.scale.ordinal();
+            LineColor.domain(Categories.filter(function(d) {
+                return d.Type == "line"
+            }).map(function(d) {
+                return d.gname
+            }));
+            LineColor.range(["#d40606", "#06bf00", "#98bdc5", "#671919", "#0b172b"])
+
+            //  drawing lines
+            svg.selectAll(".lines")
+                .data(lineData)
+                .enter()
+                .append("g")
+                .attr("class", function(d) {
+                    return d[0].gname.split('.').join("");
+                })
+                .classed("lines", true)
+                .each(function(d) {
+                    gname = d[0].gname;
+                    d3.select(this).append("path").attr("d", function(b) {
+                        return line(b)
+                    }).style({
+                        "stroke-width": "2.5px",
+                        "fill": "none"
+                    }).style("stroke", LineColor(gname)).transition().duration(1500)
+                });
+
+            //On mouseover lines will show up and related gene text will be seen
+            svg.selectAll(".lines")
+                .on("mouseover", function(d, i) {
+                    var lineclass = ("." + d[0].gname.split('.').join("") + ".lines") //dots in gene name are removed to eliminate errors (eg. ".str12.lines")
+                    d3.selectAll(lineclass)
+                        .transition()
+                        .style("opacity", 1);
+
+                    // Label of the gene
+                    svg.append("text").attr({
+                            id: "t" + d[0].gname.split('.').join(""), // dots in gene name are removed for errors
+                            x: function() {
+                                return x(d[0].xIndex) + 15;
+                            },
+                            y: function() {
+                                return y(d[0].y) - 15;
+                            }
+                        })
+
+                        .text(function() {
+                            return d[0].gname // Gene name
+                        })
+
+
+                })
+                //On mouseout lines will become transparent and related gene text will be removed
+                .on("mouseout", function(d, i) {
+                    var lineclass = ("." + d[0].gname.split('.').join("") + ".lines") //".str12.lines"
+                    d3.selectAll(lineclass)
+                        .transition()
+                        .style("opacity", 0.2)
+                    d3.select("#t" + d[0].gname.split('.').join("")).remove();
+                });
+
+
+            //  drawing bars
+            var state = svg.selectAll(".bar")
+                .data(data)
+                .enter().append("g")
+                .attr("class", "bar")
+                .attr("transform", function(d) {
+                    return "translate(" + x(d.xIndex) + ",0)";
+                });
+
+            var bars = state.selectAll("rect")
+                .data(function(d) {
+                    return d.bars;
+                })
+                .enter().append("g")
+                .attr("class", "subbar");
+            
+            bars.append("rect")
+                .attr("width", x.rangeBand())
+                .attr("y", function(d) {
+                    return y(d.y1);
+                })
+                .attr("height", function(d) {
+                    return y(d.y0) - y(d.y1);
+                })
+                .style("fill", function(d) {
+                    return color(d.name);
+                })
+                .style("stroke", "#000")
+
+            //chromosome number is located inside of the bar
+            bars.append("text")
+                .attr("x", x)
+                .attr("y", function(d) {
+                    return y(d.y0)
+                })
+                .attr("dy", "-0.2em")
+                .attr("dx", "0.2em")
+                .style("font", "6px sans-serif")
+                .style("text-anchor", "begin")
+                .text(function(d) {
+                    return d.name.substring('chr'.length)
+                });
+
+
+            //x axis to show organisms
+            svg.append("g")
+                .classed("x axis", true)
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis)
+                .style("text-anchor", "end");
+      }
+      $(document).ready(function() {
+
+             doPlot()
+             d3.select("#parameters").on("change", doPlot);
+        });
+
+    </script>
+
+</body>
+
+</html>
