@@ -109,9 +109,9 @@ function setChromosomeName(index, chromosome) {
 
 function setChromosomeRange(index, start, value) {
     if (start) {
-        chromosomes_to_compare[index][3] = value;    
+        chromosomes_to_compare[index][2] = value;    
     } else {
-        chromosomes_to_compare[index][4] = value;    
+        chromosomes_to_compare[index][3] = value;    
     }
 }
 
@@ -198,6 +198,11 @@ function Genome(chrom_size_file, bed_file) {
 //                                                                                                                                 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+function pointInRange(point_, minimum_, maximum_) {
+    return ((parseInt(point_) <= parseInt(maximum_)) && (parseInt(point_) >= parseInt(minimum_)));
+    //return true;
+}
+
 function diplayChromosomesToCompare(genome_list, chromosome_list, div_id) {
     //alert("here");
     if (!div_id) {
@@ -211,6 +216,8 @@ function diplayChromosomesToCompare(genome_list, chromosome_list, div_id) {
     if (!genome_list) {
         genome_list = input_object_list;
     }
+
+
 
     // first 
     var name_1 = chromosome_list[0][0];;
@@ -232,10 +239,6 @@ function diplayChromosomesToCompare(genome_list, chromosome_list, div_id) {
     if (!chromosome_1_size) alert("Wrong chromosome name for 1st specimen");
 
 
-    chromosome_1_gene_list = [];
-    bed_file_1.forEach(function(element) {
-        if (element.chr == chromosome_1) chromosome_1_gene_list.push(element);
-    });
 
     // second
     var name_2 = chromosome_list[1][0];;
@@ -256,18 +259,54 @@ function diplayChromosomesToCompare(genome_list, chromosome_list, div_id) {
     });
     if (!chromosome_2_size) alert("Wrong chromosome name for 2nd specimen");
 
-    chromosome_2_gene_list = [];
-    bed_file_2.forEach(function(element) {
-        if (element.chr == chromosome_2) chromosome_2_gene_list.push(element);
+    // range/size logic
+    var top_range_start = chromosome_list[0][2];
+    var top_range_end = chromosome_list[0][3];
+    var bottom_range_start = chromosome_list[1][2];
+    var bottom_range_end = chromosome_list[1][3];
+
+    if (!top_range_start) top_range_start=0;
+    if (!bottom_range_start) bottom_range_start=0;
+
+    if (!top_range_end) top_range_end=chromosome_1_size;
+    if (!bottom_range_end) bottom_range_end=chromosome_2_size;
+
+    chromosome_1_size = top_range_end - top_range_start;
+    chromosome_2_size = bottom_range_end - bottom_range_start;
+
+    console.log("chromosome_1_size "+chromosome_1_size);
+    console.log("chromosome_2_size "+chromosome_2_size);
+
+    // find the genes
+    chromosome_1_gene_list = [];
+    bed_file_1.forEach(function(element) {
+        if (element.chr == chromosome_1 &&
+            pointInRange(element.start, top_range_start, top_range_end) &&
+            pointInRange(element.stop, top_range_start, top_range_end)) {
+          chromosome_1_gene_list.push(element);  
+        } else {
+            console.log()
+        }
     });
 
-    function genePair(gene_name, gene_top_start, gene_top_end, gene_bottom_start, gene_botton_end, different_sign) {
+
+    chromosome_2_gene_list = [];
+    bed_file_2.forEach(function(element) {
+        if (element.chr == chromosome_2 &&
+            pointInRange(element.start, bottom_range_start, bottom_range_end) &&
+            pointInRange(element.stop, bottom_range_start, bottom_range_end)) {
+            chromosome_2_gene_list.push(element);
+        }
+    });
+
+
+    function genePair(gene_name, gene_top_start, gene_top_end, gene_bottom_start, gene_botton_end, different_sign, top_range_start, bottom_range_start) {
         var instance = {};
         instance.gene_name = gene_name;
-        instance.gene_top_start = gene_top_start;
-        instance.gene_top_end = gene_top_end;
-        instance.gene_bottom_start = gene_bottom_start;
-        instance.gene_botton_end = gene_botton_end;
+        instance.gene_top_start = gene_top_start - top_range_start;
+        instance.gene_top_end = gene_top_end - top_range_start;
+        instance.gene_bottom_start = gene_bottom_start - bottom_range_start;
+        instance.gene_botton_end = gene_botton_end - bottom_range_start;
         instance.different_sign = different_sign;
         return instance;
     }
@@ -277,7 +316,7 @@ function diplayChromosomesToCompare(genome_list, chromosome_list, div_id) {
     chromosome_1_gene_list.forEach(function(gene1) {
         chromosome_2_gene_list.forEach(function(gene2) {
             if (gene1.gname == gene2.gname) {
-                var new_gene_pair = new genePair(gene1.gname, gene1.start, gene1.stop, gene2.start, gene2.stop, gene1.sign==gene2.sign);
+                var new_gene_pair = new genePair(gene1.gname, gene1.start, gene1.stop, gene2.start, gene2.stop, gene1.sign==gene2.sign, top_range_start, bottom_range_start);
                 gene_pairs.push(new_gene_pair);
             }
         });
@@ -338,15 +377,15 @@ function diplayChromosomesToCompare(genome_list, chromosome_list, div_id) {
         var lineData = [];
 
 
-        lineData.push({"x": Math.ceil(pair.gene_top_start*top_x_factor), "y":top_y});
-        lineData.push({"x": Math.ceil(pair.gene_top_end*top_x_factor), "y":top_y});
+        lineData.push({"x": Math.ceil(pair.gene_top_start*top_x_factor) + 10, "y":top_y});
+        lineData.push({"x": Math.ceil(pair.gene_top_end*top_x_factor) + 10, "y":top_y});
 
         if (pair.different_sign) {
-            lineData.push({"x": Math.ceil(pair.gene_botton_end*bottom_x_factor), "y":bottom_y});            
-            lineData.push({"x": Math.ceil(pair.gene_bottom_start*bottom_x_factor), "y":bottom_y});
+            lineData.push({"x": Math.ceil(pair.gene_botton_end*bottom_x_factor) + 10, "y":bottom_y});            
+            lineData.push({"x": Math.ceil(pair.gene_bottom_start*bottom_x_factor) + 10, "y":bottom_y});
         } else {
-            lineData.push({"x": Math.ceil(pair.gene_bottom_start*bottom_x_factor), "y":bottom_y});
-            lineData.push({"x": Math.ceil(pair.gene_botton_end*bottom_x_factor), "y":bottom_y});            
+            lineData.push({"x": Math.ceil(pair.gene_bottom_start*bottom_x_factor) + 10, "y":bottom_y});
+            lineData.push({"x": Math.ceil(pair.gene_botton_end*bottom_x_factor) + 10, "y":bottom_y});            
         }
 
         var lineFunction = d3.svg.line()
