@@ -100,7 +100,20 @@ function getListElementHtml(input_object, index) {
 }
 
 
+function setChromosome(index, chromosome) {
+    chromosomes_to_compare[index][1] = chromosome;
+}
+function setChromosomeName(index, chromosome) {
+    chromosomes_to_compare[index][0] = chromosome;
+}
 
+function setChromosomeRange(index, start, value) {
+    if (start) {
+        chromosomes_to_compare[index][3] = value;    
+    } else {
+        chromosomes_to_compare[index][4] = value;    
+    }
+}
 
 var selectedGeneInGeneSearch = "";
 function searchGene(gene_class, div_id) {
@@ -148,7 +161,8 @@ function loadBedFile(data) {
             chr: linearray[0],
             start: linearray[1],
             stop: linearray[2],
-            gname: linearray[3]
+            gname: linearray[3],
+            sign: linearray[5]
         });
     };
     return lines
@@ -180,7 +194,206 @@ function Genome(chrom_size_file, bed_file) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                                                                 //
-// Plot                                                                                                    //
+// Chromosome Plot                                                                                                                 //
+//                                                                                                                                 //
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+function diplayChromosomesToCompare(genome_list, chromosome_list, div_id) {
+    //alert("here");
+    if (!div_id) {
+        div_id = "chromesome_compare_graph";
+    }
+
+    if (!chromosome_list) {
+        chromosome_list = chromosomes_to_compare;
+    }
+
+    if (!genome_list) {
+        genome_list = input_object_list;
+    }
+
+    // first 
+    var name_1 = chromosome_list[0][0];;
+    var chromosome_1 = chromosome_list[0][1];
+    var genome_1 = null;
+    genome_list.forEach(function(element) {
+        if (element.name == name_1) genome_1 = element;
+    });
+    if (!genome_1) alert("Wrong speciment name for 1st chromosome");
+    var bed_file_1 = loadBedFile(genome_1.bed_file_text);
+    var size_file_1 = loadSizeFile(genome_1.size_file_text);
+
+    var chromosome_1_size = null;
+    size_file_1.forEach(function(element) {
+        if (element.chr == chromosome_1) {
+            chromosome_1_size = element.size;
+        }
+    });
+    if (!chromosome_1_size) alert("Wrong chromosome name for 1st specimen");
+
+
+    chromosome_1_gene_list = [];
+    bed_file_1.forEach(function(element) {
+        if (element.chr == chromosome_1) chromosome_1_gene_list.push(element);
+    });
+
+    // second
+    var name_2 = chromosome_list[1][0];;
+    var chromosome_2 = chromosome_list[1][1];
+    var genome_2 = null;
+    genome_list.forEach(function(element) {
+        if (element.name == name_2) genome_2 = element;
+    });
+    if (!genome_2) alert("Wrong speciment name for 2nd chromosome");
+    var bed_file_2 = loadBedFile(genome_2.bed_file_text);
+    var size_file_2 = loadSizeFile(genome_2.size_file_text);
+
+    var chromosome_2_size = null;
+    size_file_2.forEach(function(element) {
+        if (element.chr == chromosome_2) {
+            chromosome_2_size = element.size;
+        }
+    });
+    if (!chromosome_2_size) alert("Wrong chromosome name for 2nd specimen");
+
+    chromosome_2_gene_list = [];
+    bed_file_2.forEach(function(element) {
+        if (element.chr == chromosome_2) chromosome_2_gene_list.push(element);
+    });
+
+    function genePair(gene_name, gene_top_start, gene_top_end, gene_bottom_start, gene_botton_end, different_sign) {
+        var instance = {};
+        instance.gene_name = gene_name;
+        instance.gene_top_start = gene_top_start;
+        instance.gene_top_end = gene_top_end;
+        instance.gene_bottom_start = gene_bottom_start;
+        instance.gene_botton_end = gene_botton_end;
+        instance.different_sign = different_sign;
+        return instance;
+    }
+
+    gene_pairs = [];
+
+    chromosome_1_gene_list.forEach(function(gene1) {
+        chromosome_2_gene_list.forEach(function(gene2) {
+            if (gene1.gname == gene2.gname) {
+                var new_gene_pair = new genePair(gene1.gname, gene1.start, gene1.stop, gene2.start, gene2.stop, gene1.sign==gene2.sign);
+                gene_pairs.push(new_gene_pair);
+            }
+        });
+    });
+
+////////////////////////////
+
+    // d3 plot: 
+
+    d3.select("#"+div_id).select("svg").remove();
+
+    var margin = {
+        top: 50,
+        right: 20,
+        bottom: 30,
+        left: 20
+    };
+
+    var barPad = .95; //padding between bars
+    var width = 800 - margin.left - margin.right;
+    var height = 500 - margin.top - margin.bottom;
+
+    var svg = d3.select("#"+ div_id).append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .attr("id", "d3-chr-plot")
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+    var max_bar_width = width;
+    var max_chr_size = Math.max(chromosome_1_size, chromosome_2_size);  
+    var top_bar_width = chromosome_1_size / max_chr_size * max_bar_width
+    var bottom_bar_width = chromosome_2_size / max_chr_size * max_bar_width
+
+    //svg.remove();
+
+    svg.append("rect")
+        .attr("x", 10)
+        .attr("y", 10)
+        .attr("width", top_bar_width)
+        .attr("height", 20);
+
+    svg.append("rect")
+        .attr("x", 10)
+        .attr("y", 200)
+        .attr("width", bottom_bar_width)
+        .attr("height", 20);
+
+    gene_pairs.forEach(function(pair) {
+        // { "x": 1,   "y": 5},  { "x": 20,  "y": 20},
+        // { "x": 40,  "y": 10}, { "x": 60,  "y": 40},
+        // { "x": 80,  "y": 5},  { "x": 100, "y": 60}];
+        var top_y = 30;
+        var bottom_y = 200;
+        var top_x_factor = top_bar_width / chromosome_1_size;
+        var bottom_x_factor = bottom_bar_width / chromosome_2_size;
+        var lineData = [];
+
+
+        lineData.push({"x": Math.ceil(pair.gene_top_start*top_x_factor), "y":top_y});
+        lineData.push({"x": Math.ceil(pair.gene_top_end*top_x_factor), "y":top_y});
+
+        if (pair.different_sign) {
+            lineData.push({"x": Math.ceil(pair.gene_botton_end*bottom_x_factor), "y":bottom_y});            
+            lineData.push({"x": Math.ceil(pair.gene_bottom_start*bottom_x_factor), "y":bottom_y});
+        } else {
+            lineData.push({"x": Math.ceil(pair.gene_bottom_start*bottom_x_factor), "y":bottom_y});
+            lineData.push({"x": Math.ceil(pair.gene_botton_end*bottom_x_factor), "y":bottom_y});            
+        }
+
+        var lineFunction = d3.svg.line()
+                         .x(function(d) { return d.x; })
+                         .y(function(d) { return d.y; })
+                         .interpolate("linear");
+
+
+        svg.append("path")
+            .attr("d", lineFunction(lineData))
+            .attr("stroke", "blue")
+            .attr("stroke-width", 2)
+            .attr("fill", "blue")
+
+        .on("mouseover", function(d, i) {   
+            svg.append("text").attr({
+                        x: function() {
+                            return  Math.ceil(pair.gene_top_end*bottom_x_factor);
+                        },
+                        y: function() {
+                            return top_y+30;
+                        }
+                    })
+                    .text(function() {
+                        return pair.gene_name // Gene name
+                    });
+        })
+        .on("mouseout", function(d, i) {
+            svg.select("text").remove();
+        });
+
+
+    });
+/////////////////////////
+
+    console.log(gene_pairs);
+
+    console.log("in diplayChromosomesToCompare " + chromosome_1_gene_list.length + " " + chromosome_2_gene_list.length)
+
+
+
+
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                                                 //
+// Bar Plot                                                                                                                        //
 //                                                                                                                                 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -315,10 +528,6 @@ function plotGenomicsBarGraph(genome_list, div_id) {
             });
         })
     });
-
-
-
-
 
     // Assigning min and max values of x and y axis
     var x = d3.scale.ordinal()

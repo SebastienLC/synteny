@@ -5,6 +5,7 @@
 
     <script type="text/javascript">
       input_object_list = [];
+      chromosomes_to_compare = [[null, null, null, null],[null,null,null,null]];
 
 
       sample1 = new SpecimentInputObject();
@@ -34,9 +35,46 @@
       Search Gene: <input type='text' name='org_name' onchange='searchGene(this.value)' />
     </p>
 
+    <h2> Genome Bar Chart</h2>
+
     <div id='input_table'>input_table</div>
 
-    <div id='output'></div>
 
+
+    <h2> Chromosome pair graph</h2>
+    <p>
+      Specimen Name 1: <input type='text'  onchange='setChromosomeName(0, this.value)' />
+      Chromosome Name 1: <input type='text' onchange='setChromosome(0, this.value)' /> (ex: chr2)
+      Range: 
+        <input type='text' onchange='setChromosomeRange(0, true, this.value)' />
+        <input type='text' onchange='setChromosomeRange(0, false, this.value)' />
+    </p>
+    <p>
+      Speciment Name 2: <input type='text'  onchange='setChromosomeName(1, this.value)' />
+      Chromosome Name 2: <input type='text'  onchange='setChromosome(1, this.value)' />
+      Range: 
+        <input type='text' onchange='setChromosomeRange(1, true, this.value)' />
+        <input type='text' onchange='setChromosomeRange(1, false, this.value)' />
+
+    </p>
+    <p>
+      <button id='btn1' name='subject2' onclick=diplayChromosomesToCompare()> Plot chromosome pair graph</button>
+    </p>
+    <div id='chromesome_compare_graph'></div>
+
+
+
+<!--
+<svg width="100" height="100">
+  <path d=" M 10 10
+            L 100 10
+            L 10 100
+            L 100 100
+            L 10 10
+          "
+            stroke="red" stroke-width="2" fill="red" />
+
+</svg>
+-->
     </body>
     </html>
