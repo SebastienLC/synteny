@@ -7,10 +7,10 @@
 
 function readLocalFile(event, index, size_file) {
     // change element file name and file text
-    console.log(event.target);
+    //console.log(event.target);
     var input = event.target;
 
-    console.log(input.files[0].name);
+    //console.log(input.files[0].name);
 
     var reader = new FileReader();
     reader.onload = function(){
@@ -28,7 +28,6 @@ function readLocalFile(event, index, size_file) {
     reader.readAsText(input.files[0]);
 
 };
-
 
 function SpecimentInputObject() {
   var instance = {};
