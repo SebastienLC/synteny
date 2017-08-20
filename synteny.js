@@ -7,16 +7,14 @@
 
 function readLocalFile(event, index, size_file) {
     // change element file name and file text
+    console.log(event.target);
     var input = event.target;
 
-    //console.log(input.files[0].name);
+    console.log(input.files[0].name);
 
     var reader = new FileReader();
     reader.onload = function(){
         var text = reader.result;
-        //var node = document.getElementById('output');
-        //node.innerText = text;
-        //console.log(reader.result.substring(0, 200));
 
         if (size_file) {
           input_object_list[index].size_file_name = input.files[0].name;
@@ -102,6 +100,39 @@ function getListElementHtml(input_object, index) {
     </tr> ";
 }
 
+
+
+
+var selectedGeneInGeneSearch = "";
+function searchGene(gene_class, div_id) {
+
+    if (!div_id) {
+        div_id = "bar_genomics_graph_div";
+    }
+
+    if (gene_class == null) gene_class = selectedGeneInGeneSearch;
+
+    var svg = d3.selectAll("#"+ div_id);
+
+
+    var lineclass = (".lines") //".str12.lines"
+    d3.selectAll(lineclass)
+        .transition()
+        .style("opacity", 0.2)
+
+    d3.selectAll("#t"+selectedGeneInGeneSearch.split('.').join("")).remove();
+
+    if (gene_class != "") {
+        var lineclass = ("." + gene_class.split('.').join("")); //dots in gene name are removed to eliminate errors (eg. ".str12.lines")
+
+        d3.selectAll(lineclass)
+            .transition()
+            .style("opacity", 1);
+    }
+    //d3.select("#t" + d[0].gname.split('.').join("")).remove();
+    selectedGeneInGeneSearch = gene_class;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                                                                 //
 // Parsing and processing .bed and .size files                                                                                     //
@@ -147,10 +178,6 @@ function Genome(chrom_size_file, bed_file) {
     instance.org
     return instance;
 }
-
-
-
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                                                                 //
@@ -417,6 +444,10 @@ function plotGenomicsBarGraph(genome_list, div_id) {
         })
         //On mouseout lines will become transparent and related gene text will be removed
         .on("mouseout", function(d, i) {
+
+            if (selectedGeneInGeneSearch.split('.').join("") ==
+                d[0].gname.split('.').join("")) return;
+
             var lineclass = ("." + d[0].gname.split('.').join("") + ".lines") //".str12.lines"
             d3.selectAll(lineclass)
                 .transition()
@@ -475,6 +506,9 @@ function plotGenomicsBarGraph(genome_list, div_id) {
         .attr("transform", "translate(0," + height + ")")
         .call(xAxis)
         .style("text-anchor", "end");
+
+
+    searchGene(null);
 }
 
 

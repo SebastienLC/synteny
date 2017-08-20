@@ -6,6 +6,30 @@
     <script type="text/javascript">
       input_object_list = [];
 
+
+      sample1 = new SpecimentInputObject();
+      sample1.name = "human";
+      input_object_list.push(sample1);
+
+      sample2 = new SpecimentInputObject();
+      sample2.name = "mouse";
+      input_object_list.push(sample2);
+
+function SpecimentInputObject() {
+  var instance = {};
+  instance.name = "";
+
+  instance.bed_file_name = "";
+  instance.bed_file_text = "";
+
+  instance.size_file_name = "";
+  instance.size_file_text = "";
+  return instance;
+}
+
+
+      input_object_list.push();
+
       function displayInputTable() {
           document.getElementById("input_table").innerHTML = getInputTableHTML(input_object_list);  
       }
@@ -18,6 +42,10 @@
       <h1>Synteny</h1>
 
     <div id='bar_genomics_graph_div'></div>
+
+    <p>
+      Search Gene: <input type='text' name='org_name' onchange='searchGene(this.value)' />
+    </p>
 
     <div id='input_table'>input_table</div>
 
