@@ -1,0 +1,11 @@
+#customFile .custom-file-control:lang(en)::after {
+  content: "Bop a file...";
+}
+
+#customFile .custom-file-control:lang(en)::before {
+  content: "Click me";
+}
+
+.red {
+  color: red;
+}

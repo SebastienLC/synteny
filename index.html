@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <!-- Bootstrap CSS -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="bootstrap-filestyle.js"> </script>
+    <script src="synteny.js">    </script>
+    <script src="hive.js">    </script>
+    <script type="text/javascript">
+
+    input_object_list = [];
+    sample1 = new SpecimentInputObject();
+    sample1.name = "human";
+    input_object_list.push(sample1);
+    sample2 = new SpecimentInputObject();
+    sample2.name = "mouse";
+    input_object_list.push(sample2);
+    input_object_list.push();
+
+
+
+      input_object_list = [];
+      input_object_mappings = {};
+
+      document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById("input_table").innerHTML = getInputTableHTML(input_object_list);
+        reloadfilestyle();
+      });
+    </script>
+      <style type="text/css">
+    	.link{
+    		fill: none;
+    		stroke-width: 1.5px;
+    	}
+
+    	.axis, .node{
+    		stroke: #000;
+    		stroke-width: 1.5px;
+    	}
+
+    	.tooltip{
+    		position: absolute;
+    		width: 50px;
+    		height: 30px;
+    		padding: 2px;
+    		font: 12px sans-serif;
+    		background: lightgreen;
+    		border: 0px;
+    		pointer-events: none;
+    	}
+
+    	/*.link:hover{
+    		stroke: red;
+    		stroke-opacity:.9;
+    	}*/
+  	</style>
+
+  </head>
+  <body>
+    <h1 class = "red">Synteny</h1>
+    <br>
+
+    <ul class="nav nav-tabs" role="tablist">
+      <li class="nav-item">
+        <a class="nav-link active" href="#bar_genomics_graph_div" role="tab" data-toggle="tab">Genomics Bar Graph</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#hiveplot" role="tab" data-toggle="tab" >Hive Plot</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link disabled" href="#secret_plot_div" role="tab" data-toggle="tab">Node Plot</a>
+      </li>
+    </ul>
+
+<!-- Tab panes -->
+<div class="tab-content">
+  <div role="tabpanel" class="tab-pane fade show active" id="bar_genomics_graph_div">
+    <p>
+      <br>
+      <div id="search_bar" style="display:none">
+        <strong>&nbsp&nbsp Search Gene: </strong> <input type='text' name='org_name' onchange='searchGene(this.value)' />
+      </div>
+    </p>
+
+  </div>
+
+
+  <div role="tabpanel" class="tab-pane fade" id="hiveplot">
+    <div id="hiveplot_inner">
+
+    </div>
+    <script type="text/javascript">
+
+    //given default parameters of the plot
+    var width = 960;
+    var height = 500;
+    //out-int=length of the chromosome
+    var outerRadius = 250;
+    var innerRadius = 30;
+
+
+    var angle = d3.scale.ordinal()
+    		.domain(d3.range(4))
+    		.rangePoints([0,2 * Math.PI]);
+
+    var radius = d3.scale.linear()
+    		.range([innerRadius, outerRadius]);
+    //category corresponding to number of chromosomes/genes(gradient change)
+    var color = d3.scale.category10()
+    		.domain(d3.range(20));
+
+    //add genes as nodes
+    //color stands for chromosome
+    var nodes = [
+      {x: 0, y: .1, name:"genesA"},
+      {x: 0, y: .9, name:"genesB"},
+      {x: 1, y: .2, name:"genesC"},
+      {x: 1, y: .3, name: "genesD"},
+      {x: 2, y: .1, name: "genesE"},
+      {x: 2, y: .8, name: "genesF"},
+      {x: 1, y: .4, name: "genesG"},
+      {x: 2, y:.2, name: "genesH"},
+      {x: 2, y: .7, name: "genesI"},
+      {x: 2, y: .4, name: "genesJ"},
+      {x: 1, y: .6, name: "genesK"},
+    ];
+
+    //use comparision to come up with a link,
+    //translate into links
+    var links = [
+      {source: nodes[0], target: nodes[2]},
+      {source: nodes[1], target: nodes[3]},
+      {source: nodes[2], target: nodes[4]},
+      {source: nodes[2], target: nodes[5]},
+      {source: nodes[3], target: nodes[5]},
+      {source: nodes[4], target: nodes[0]},
+      {source: nodes[5], target: nodes[1]},
+      {source: nodes[1], target: nodes[4]},
+      {source: nodes[1], target: nodes[6]},
+      {source: nodes[6], target: nodes[3]},
+      {source: nodes[4], target: nodes[7]},
+      {source: nodes[4], target: nodes[7]},
+      {source: nodes[7], target: nodes[5]},
+      {source: nodes[7], target: nodes[2]},
+      {source: nodes[9], target: nodes[2]},
+      {source: nodes[8], target: nodes[6]},
+      {source: nodes[3], target: nodes[9]},
+      {source: nodes[1], target: nodes[8]},
+      {source: nodes[4], target: nodes[10]},
+      {source: nodes[10], target: nodes[3]},
+      {source: nodes[4], target: nodes[10]},
+      {source: nodes[8], target: nodes[7]},
+      {source: nodes[4], target: nodes[9]},
+      {source: nodes[1], target: nodes[7]},
+      {source: nodes[10], target: nodes[7]},
+    ];
+
+    //the number of axias should be the number of species
+    var svg = d3.select("#hiveplot_inner").append("svg")
+    		.attr("width", width)
+    		.attr("height", height)
+    	.append("g")
+    		.attr("transform", "translate(" + width/2 + "," + height/2 + ")");
+
+    var tooltip = d3.select("body").append("div")
+    					.attr("class", "tooltip")
+    					.style("opacity", 0);
+
+    //painting axis
+    svg.selectAll(".axis")
+    //changing alone with species number
+    		.data(d3.range(3))
+    	.enter().append("line")
+    		.attr("class", "axis")
+    		.attr("transform", function(d){ return "rotate(" + degrees(angle(d)) + ")";})
+    		.attr("x1", radius.range()[0])
+    		.attr("x2", radius.range()[1]);
+
+    //painting links
+    svg.selectAll(".link")
+        .data(links)
+      .enter().append("path")
+        .attr("class", "link")
+    	//ploting the links of different genes
+        .attr("d", d3.hive.link()
+         .angle(function(d) { return angle(d.x); })
+         .radius(function(d) { return radius(d.y); }))
+        .style("stroke", function(d) { return color(d.source.x); });
+
+    //painting nodes
+    svg.selectAll(".node")
+        .data(nodes)
+      .enter().append("circle")
+        .attr("class", "node")
+        .attr("transform", function(d) { return "rotate(" + degrees(angle(d.x)) + ")"; })
+        .attr("cx", function(d) { return radius(d.y); })
+        .attr("r", 5)
+        .style("fill", function(d) { return color(d.x); })
+        .on("mouseover", function(d){
+        	tooltip.transition()
+        		.duration(200)
+        		.style("opacity", .9);
+        	tooltip.html("Node - " + d.name + "<br/>" + "Type - " + d.x)
+        		.style("left", (d3.event.pageX + 5) + "px")
+        		.style("top", (d3.event.pageY - 28) + "px");
+        })
+        .on("mouseout", function(d){
+        	tooltip.transition()
+        		.duration(500)
+        		.style("opacity", 0);
+        });
+
+    function degrees(radians) {
+      return radians / Math.PI * 180 - 90;
+    }
+
+    </script>
+    </div>
+  <div role="tabpanel" class="tab-pane fade" id="secret_plot_div">
+  </div>
+</div>
+
+
+
+<div id='plot2_div'></div>
+
+
+<div id='input_table'>input_table</div>
+
+<div id='output'></div>
+
+    <!-- Optional JavaScript -->
+  </body>
+</html>

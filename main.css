@@ -1,0 +1,26 @@
+body,
+html {
+    margin: 0;
+    padding: 0;
+    font-family: "Arial", sans-serif;
+    font-size: 0.95em;
+    text-align: center;
+}
+
+svg {
+    background-color: #F5F2EB;
+    border: 1px solid #CCC;
+    font: 10px sans-serif;
+    shape-rendering: crispEdges;
+}
+
+.axis path {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+.lines {
+    opacity: 0.2;
+}
+
+
